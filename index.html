@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Peta Desa Kutatualah</title>
+    <meta name="description" content="Peta Administrasi Interaktif Desa Kutatualah — Scan QR untuk menjelajahi peta desa secara digital." />
+
+    <!-- Google Fonts: Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+
+    <!-- ─── LOADING SCREEN ──────────────────────────────── -->
+    <div id="loader" aria-label="Memuat peta...">
+
+      <!-- Thin left-edge vertical progress bar -->
+      <div id="loader-track">
+        <div id="loader-bar"></div>
+      </div>
+
+      <!-- Village emblem / wordmark area -->
+      <div id="loader-brand">
+        <svg id="loader-icon" width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <circle cx="24" cy="24" r="22" stroke="#2E7D32" stroke-width="2" fill="none" opacity="0.25"/>
+          <circle cx="24" cy="24" r="10" fill="#2E7D32" opacity="0.15"/>
+          <!-- Simple map-pin shape -->
+          <path d="M24 10C19.03 10 15 14.03 15 19C15 25.25 24 38 24 38C24 38 33 25.25 33 19C33 14.03 28.97 10 24 10Z" fill="#2E7D32"/>
+          <circle cx="24" cy="19" r="4" fill="white"/>
+        </svg>
+        <p id="loader-village-name">Desa Kutatualah</p>
+        <p id="loader-subtitle">Kab. Deli Serdang · Sumatera Utara</p>
+      </div>
+
+      <!-- Percentage counter -->
+      <div id="loader-counter">
+        <span id="loader-pct">0</span><span class="pct-sign">%</span>
+      </div>
+
+      <!-- Status label -->
+      <p id="loader-status">Memuat peta desa…</p>
+    </div>
+
+    <!-- ─── CLIP-PATH GREEN CURTAIN WIPE ───────────────────── -->
+    <div id="wipe-curtain" aria-hidden="true"></div>
+
+    <!-- ─── MAIN APP ────────────────────────────────────── -->
+    <main id="app">
+
+      <!-- Video Stage (world.mp4) -->
+      <section id="video-stage" aria-label="Animasi Zoom Bumi">
+        <video id="world-video" src="/world.mp4" playsinline muted preload="auto"></video>
+        <button id="btn-skip-video" class="btn-skip" title="Lewati animasi">Lewati &rarr;</button>
+      </section>
+
+      <!-- 2-D Interactive Map -->
+      <section id="map-stage" aria-label="Peta Administrasi Desa">
+
+        <!-- Map viewport — panzoom target -->
+        <div id="map-viewport">
+          <div id="panzoom-scene">
+            <img id="village-map-img"
+                 src="/kutatualah-satellite.png"
+                 alt="Peta Administrasi Desa Kutatualah"
+                 draggable="false" />
+          </div>
+        </div>
+
+        <!-- Header Bar: Title Badge + Mode Toggle Pill -->
+        <header id="map-header">
+          <div id="map-badge">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2E7D32" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
+              <circle cx="12" cy="9" r="2.5"/>
+            </svg>
+            <span>Desa Kutatualah</span>
+          </div>
+
+          <!-- Mode Toggle Pill (Satellite vs Street View) -->
+          <div id="map-mode-pill" class="map-mode-pill">
+            <button id="mode-sat" class="mode-opt active">Satelit</button>
+            <button id="mode-street" class="mode-opt">Jalan</button>
+          </div>
+        </header>
+
+        <!-- Floating action controls -->
+        <nav id="map-controls" aria-label="Kontrol peta">
+          <button id="btn-zoom-in"  class="map-btn" title="Perbesar" aria-label="Perbesar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+          <button id="btn-zoom-out" class="map-btn" title="Perkecil" aria-label="Perkecil">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+          <button id="btn-reset"    class="map-btn map-btn--accent" title="Setel ulang tampilan" aria-label="Setel ulang tampilan">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+          </button>
+          <button id="btn-landmarks" class="map-btn" title="Landmark Desa" aria-label="Landmark Desa">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+              <circle cx="12" cy="10" r="3"/>
+            </svg>
+          </button>
+          <button id="btn-info"     class="map-btn" title="Informasi desa" aria-label="Informasi desa">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          </button>
+        </nav>
+
+        <!-- Info Drawer (bottom sheet / panel) -->
+        <aside id="info-drawer" class="drawer-sheet" aria-label="Informasi Desa" aria-hidden="true">
+          <div class="drawer-handle"></div>
+
+          <div class="drawer-body">
+            <header class="drawer-header">
+              <div>
+                <p id="drawer-kecamatan" class="drawer-sub">Kecamatan Namorambe</p>
+                <h2 id="drawer-title" class="drawer-title">Desa Kutatualah</h2>
+              </div>
+              <button id="btn-close-drawer" class="btn-close-icon" aria-label="Tutup informasi">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </header>
+
+            <p id="drawer-desc">
+              Peta administrasi digital ini menampilkan batas wilayah, jalur jalan, fasilitas umum, serta zona administratif Desa Kutatualah secara interaktif.
+            </p>
+
+            <dl id="drawer-stats">
+              <div class="stat-item">
+                <dt>Luas Wilayah</dt>
+                <dd>4,28 km²</dd>
+              </div>
+              <div class="stat-item">
+                <dt>Jumlah RW</dt>
+                <dd>8 RW</dd>
+              </div>
+              <div class="stat-item">
+                <dt>Jumlah RT</dt>
+                <dd>32 RT</dd>
+              </div>
+              <div class="stat-item">
+                <dt>Penduduk</dt>
+                <dd>±12.450 jiwa</dd>
+              </div>
+            </dl>
+
+            <div id="drawer-legend">
+              <p class="legend-title">Keterangan Warna</p>
+              <ul>
+                <li><span class="dot dot-green"></span>Zona Pertanian / Hijau</li>
+                <li><span class="dot dot-blue"></span>Sungai &amp; Perairan</li>
+                <li><span class="dot dot-yellow"></span>Permukiman</li>
+                <li><span class="dot dot-red"></span>Fasilitas Umum</li>
+              </ul>
+            </div>
+          </div>
+        </aside>
+
+        <!-- Landmark Drawer (Minimalist POI Window) -->
+        <aside id="landmark-drawer" class="drawer-sheet" aria-label="Landmark Desa" aria-hidden="true">
+          <div class="drawer-handle"></div>
+
+          <div class="drawer-body">
+            <header class="drawer-header">
+              <div>
+                <p class="drawer-sub">FASILITAS &amp; LOKASI</p>
+                <h2 class="drawer-title">Landmark Desa</h2>
+              </div>
+              <button id="btn-close-landmarks" class="btn-close-icon" aria-label="Tutup landmark">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </header>
+
+            <div id="landmark-list" class="landmark-grid">
+              <!-- Mockup Landmark Card 1 -->
+              <div class="landmark-card">
+                <div class="landmark-img-placeholder">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                  <span>Mockup Foto Tempat</span>
+                </div>
+                <div class="landmark-info">
+                  <span class="landmark-tag tag-gov">Pemerintahan</span>
+                  <h3 class="landmark-name">Kantor Desa Kutatualah</h3>
+                  <p class="landmark-desc">Pusat pemerintahan &amp; layanan administrasi desa.</p>
+                </div>
+              </div>
+
+              <!-- Mockup Landmark Card 2 -->
+              <div class="landmark-card">
+                <div class="landmark-img-placeholder">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                  <span>Mockup Foto Tempat</span>
+                </div>
+                <div class="landmark-info">
+                  <span class="landmark-tag tag-pub">Fasilitas Publik</span>
+                  <h3 class="landmark-name">Alun-Alun Kutatualah</h3>
+                  <p class="landmark-desc">Kawasan terbuka hijau &amp; ruang publik warga.</p>
+                </div>
+              </div>
+
+              <!-- Mockup Landmark Card 3 -->
+              <div class="landmark-card">
+                <div class="landmark-img-placeholder">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                  <span>Mockup Foto Tempat</span>
+                </div>
+                <div class="landmark-info">
+                  <span class="landmark-tag tag-rel">Tempat Ibadah</span>
+                  <h3 class="landmark-name">Masjid Raya Kutatualah</h3>
+                  <p class="landmark-desc">Masjid sarana ibadah utama masyarakat desa.</p>
+                </div>
+              </div>
+
+              <!-- Mockup Landmark Card 4 -->
+              <div class="landmark-card">
+                <div class="landmark-img-placeholder">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                  <span>Mockup Foto Tempat</span>
+                </div>
+                <div class="landmark-info">
+                  <span class="landmark-tag tag-health">Kesehatan</span>
+                  <h3 class="landmark-name">Puskesmas Pembantu</h3>
+                  <p class="landmark-desc">Pusat kesehatan masyarakat &amp; Posyandu.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+      </section>
+    </main>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
