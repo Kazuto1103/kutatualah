@@ -1,13 +1,15 @@
 import './style.css';
 import gsap from 'gsap';
 import { initMapViewer } from './mapViewer.js';
+import { initQRCodeModal } from './qrModal.js';
 
 let hasMapTransitioned = false;
 
 // ─────────────────────────────────────────────────────────────
-// PHASE 1 — Loading Screen
+// PHASE 1 — Loading Screen & App Init
 // ─────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
+  initQRCodeModal();
   const pctEl    = document.getElementById('loader-pct');
   const barEl    = document.getElementById('loader-bar');
   const statusEl = document.getElementById('loader-status');
