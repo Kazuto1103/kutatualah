@@ -7,12 +7,10 @@ export function initQRCodeModal() {
   const modal       = document.getElementById('qr-modal');
   const canvas      = document.getElementById('qr-canvas');
   const btnQr       = document.getElementById('btn-qr');
-  const mapBadge    = document.getElementById('map-badge');
   const btnClose    = document.getElementById('btn-close-qr');
   const btnDownload = document.getElementById('btn-download-qr');
   const btnCopy     = document.getElementById('btn-copy-url');
   const copyLabel   = document.getElementById('copy-label');
-  const drawerQrBtn = document.getElementById('btn-drawer-qr');
 
   if (!modal) return;
 
@@ -77,10 +75,8 @@ export function initQRCodeModal() {
     }
   }
 
-  // Bind trigger elements
+  // Bind trigger strictly to QR Code button
   btnQr?.addEventListener('click', openQRModal);
-  mapBadge?.addEventListener('click', openQRModal);
-  drawerQrBtn?.addEventListener('click', openQRModal);
 
   // Close triggers
   btnClose?.addEventListener('click', closeQRModal);
@@ -88,20 +84,14 @@ export function initQRCodeModal() {
     if (e.target === modal) closeQRModal();
   });
 
-  // Global keydown listeners (Escape to close, 'q' or 'Q' shortcut)
+  // Global keydown listeners (Escape to close)
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && modal.classList.contains('active')) {
       closeQRModal();
-    } else if ((e.key === 'q' || e.key === 'Q') && document.activeElement?.tagName !== 'INPUT') {
-      if (modal.classList.contains('active')) {
-        closeQRModal();
-      } else {
-        openQRModal();
-      }
     }
   });
 
-  // Download QR Code Image
+  // Download QR Code Image if download button present
   btnDownload?.addEventListener('click', () => {
     if (!canvas) return;
     const link = document.createElement('a');

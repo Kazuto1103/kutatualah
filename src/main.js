@@ -1,49 +1,67 @@
 import './style.css';
 import gsap from 'gsap';
-import { initMapViewer } from './mapViewer.js';
+import { initLiveMap, refreshMapSize, animateMarkersEntrance } from './liveMap.js';
 import { initQRCodeModal } from './qrModal.js';
+import { initPhotoViewer } from './photoViewer.js';
 
 let hasMapTransitioned = false;
 
-// ─────────────────────────────────────────────────────────────
-// PHASE 1 — Loading Screen & App Init
-// ─────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
+  // Initialize QR Code Modal trigger handler (bound strictly to QR button)
   initQRCodeModal();
-  const pctEl    = document.getElementById('loader-pct');
-  const barEl    = document.getElementById('loader-bar');
+
+  // Initialize Photo Viewer Lightbox
+  initPhotoViewer();
+
+  // Initialize KKN Identity Modal
+  initKKNModal();
+
+  // Start vertical left-edge loading animation
+  runLoadingSequence();
+});
+
+/**
+ * PHASE 1 — GSAP Vertical Left Loader (fills bar 0% -> 100% top to bottom)
+ */
+function runLoadingSequence() {
+  const pctEl = document.getElementById('loader-pct');
+  const barEl = document.getElementById('loader-bar');
   const statusEl = document.getElementById('loader-status');
 
-  const statuses = [
-    [0,  'Memuat peta desa…'],
-    [28, 'Memuat animasi video bumi…'],
-    [58, 'Mengambil data wilayah…'],
-    [82, 'Menyiapkan tampilan interaktif…'],
-    [97, 'Hampir selesai…'],
+  const statusMessages = [
+    [0, 'Menyiapkan peta interaktif…'],
+    [28, 'Memuat animasi bumi video intro…'],
+    [65, 'Menyiapkan koordinat Desa Kutatualah…'],
+    [90, 'Hampir selesai…']
   ];
-  let statusIdx = 0;
 
-  const proxy = { p: 0 };
+  let currentStatusIdx = 0;
+  const progressObj = { p: 0 };
 
-  gsap.to(proxy, {
+  gsap.to(progressObj, {
     p: 100,
-    duration: 2.8,
-    ease: 'power1.inOut',
+    duration: 2.2,
+    ease: 'power2.inOut',
 
     onUpdate() {
-      const v = Math.floor(proxy.p);
-      if (pctEl) pctEl.textContent = v;
-      if (barEl) barEl.style.height = proxy.p + '%';
+      const currentPct = Math.floor(progressObj.p);
 
+      // Update numerical percentage
+      if (pctEl) pctEl.textContent = currentPct;
+
+      // Update vertical left bar height (0% -> 100%)
+      if (barEl) barEl.style.height = progressObj.p + '%';
+
+      // Update status message dynamically
       if (statusEl) {
-        for (let i = statuses.length - 1; i >= 0; i--) {
-          if (v >= statuses[i][0] && i > statusIdx) {
-            statusIdx = i;
-            gsap.killTweensOf(statusEl);
+        for (let i = statusMessages.length - 1; i >= 0; i--) {
+          if (currentPct >= statusMessages[i][0] && i > currentStatusIdx) {
+            currentStatusIdx = i;
             gsap.to(statusEl, {
-              opacity: 0, duration: 0.15,
+              opacity: 0,
+              duration: 0.15,
               onComplete() {
-                statusEl.textContent = statuses[i][1];
+                statusEl.textContent = statusMessages[i][1];
                 gsap.to(statusEl, { opacity: 1, duration: 0.2 });
               }
             });
@@ -54,17 +72,18 @@ document.addEventListener('DOMContentLoaded', () => {
     },
 
     onComplete() {
-      gsap.delayedCall(0.3, runWipe);
+      // Small pause at 100% before triggering horizontal curtain wipe
+      gsap.delayedCall(0.2, runCurtainWipeTransition);
     }
   });
-});
+}
 
-// ─────────────────────────────────────────────────────────────
-// PHASE 2 — Green Curtain Wipe (Hardware-Accelerated clipPath)
-// ─────────────────────────────────────────────────────────────
-function runWipe() {
-  const loader     = document.getElementById('loader');
-  const curtain    = document.getElementById('wipe-curtain');
+/**
+ * PHASE 2 — Horizontal Curtain Wipe & Reveal Video Stage (world.mp4)
+ */
+function runCurtainWipeTransition() {
+  const loader = document.getElementById('loader');
+  const curtain = document.getElementById('wipe-curtain');
   const videoStage = document.getElementById('video-stage');
 
   if (!curtain) {
@@ -74,18 +93,23 @@ function runWipe() {
 
   const tl = gsap.timeline();
 
-  // Step 1 (Intro): Expand green curtain from left loading bar across horizontally to right
-  // clipPath: inset(0 100% 0 0) -> inset(0 0% 0 0)
-  tl.fromTo(curtain,
+  // Step 1: Wipe green curtain horizontally across screen from left to right
+  tl.fromTo(
+    curtain,
     { clipPath: 'inset(0 100% 0 0)', webkitClipPath: 'inset(0 100% 0 0)' },
     {
       clipPath: 'inset(0 0% 0 0)',
       webkitClipPath: 'inset(0 0% 0 0)',
-      duration: 0.85,
+      duration: 0.75,
       ease: 'power2.inOut',
       onComplete() {
-        // Viewport is 100% covered in solid green: hide loader & activate video stage underneath
-        if (loader) loader.style.display = 'none';
+        // Hide loader overlay once full curtain covers screen
+        if (loader) {
+          loader.classList.add('hidden');
+          loader.style.display = 'none';
+          loader.style.pointerEvents = 'none';
+        }
+        // Make video stage visible under curtain
         if (videoStage) {
           videoStage.style.visibility = 'visible';
           videoStage.style.opacity = '1';
@@ -95,23 +119,26 @@ function runWipe() {
     }
   );
 
-  // Step 2 (Outro): Unmask left edge moving from left to right, revealing video underneath
-  // clipPath: inset(0 0% 0 0) -> inset(0 0% 0 100%)
+  // Step 2: Unmask green curtain from left to right, smoothly revealing world.mp4 video
   tl.to(curtain, {
     clipPath: 'inset(0 0% 0 100%)',
     webkitClipPath: 'inset(0 0% 0 100%)',
-    duration: 0.9,
+    duration: 0.8,
     ease: 'power2.inOut',
     delay: 0.1,
     onComplete() {
-      gsap.set(curtain, { clipPath: 'inset(0 100% 0 0)', webkitClipPath: 'inset(0 100% 0 0)' });
+      if (curtain) {
+        curtain.classList.add('hidden');
+        curtain.style.display = 'none';
+        curtain.style.pointerEvents = 'none';
+      }
     }
   });
 }
 
-// ─────────────────────────────────────────────────────────────
-// PHASE 3 — Play world.mp4 Video & Monitor 8-Second Mark
-// ─────────────────────────────────────────────────────────────
+/**
+ * PHASE 3 — Play world.mp4 Video & Monitor Transition Threshold
+ */
 function runVideoStage() {
   const video = document.getElementById('world-video');
   const skipBtn = document.getElementById('btn-skip-video');
@@ -125,11 +152,12 @@ function runVideoStage() {
   const playPromise = video.play();
   if (playPromise !== undefined) {
     playPromise.catch((err) => {
-      console.warn("Autoplay muted video error:", err);
+      console.warn("Autoplay video error:", err);
+      triggerMapTransition();
     });
   }
 
-  // Listen for 8 second timestamp threshold
+  // Listen for 8 second timestamp threshold for smooth transition
   video.addEventListener('timeupdate', () => {
     if (video.currentTime >= 8.0) {
       triggerMapTransition();
@@ -141,15 +169,15 @@ function runVideoStage() {
     triggerMapTransition();
   });
 
-  // Skip button click
+  // Skip button click handler
   skipBtn?.addEventListener('click', () => {
     triggerMapTransition();
   });
 }
 
-// ─────────────────────────────────────────────────────────────
-// PHASE 4 — Smooth Cross-fade from Video to 2D Map Viewer
-// ─────────────────────────────────────────────────────────────
+/**
+ * PHASE 4 — Smooth Cross-Fade Transition from Video to Interactive Live Map
+ */
 function triggerMapTransition() {
   if (hasMapTransitioned) return;
   hasMapTransitioned = true;
@@ -157,28 +185,105 @@ function triggerMapTransition() {
   const videoStage = document.getElementById('video-stage');
   const mapStage   = document.getElementById('map-stage');
   const video      = document.getElementById('world-video');
+  const fogOverlay = document.getElementById('fog-overlay');
+  const fogLayers  = document.querySelectorAll('.fog-layer');
 
-  // Show map stage behind video
+  // Prepare map stage behind the scenes
   if (mapStage) {
     mapStage.style.visibility = 'visible';
     mapStage.style.opacity = '0';
-    initMapViewer();
+    initLiveMap();
   }
 
-  // Fade out video stage, fade in map stage
-  gsap.to(videoStage, {
-    opacity: 0,
-    duration: 1.0,
-    ease: 'power2.out',
+  // Display the fog overlay container
+  if (fogOverlay) {
+    fogOverlay.style.display = 'block';
+  }
+
+  const tl = gsap.timeline({
     onComplete() {
-      if (videoStage) videoStage.style.display = 'none';
+      // Cleanup video stage
+      if (videoStage) {
+        videoStage.style.display = 'none';
+        videoStage.style.pointerEvents = 'none';
+      }
       if (video) video.pause();
+      
+      // Hide fog overlay container
+      if (fogOverlay) {
+        fogOverlay.style.display = 'none';
+      }
+      
+      // Ensure Leaflet size updates properly
+      refreshMapSize();
     }
   });
 
-  gsap.to(mapStage, {
+  // 1. Fog rolls in: layers fade in and scale up from small, drifting in different directions
+  tl.to(fogLayers, {
     opacity: 1,
-    duration: 1.0,
-    ease: 'power2.out',
+    scale: 1.25,
+    x: (idx) => (idx % 2 === 0 ? '15%' : '-15%'),
+    y: (idx) => (idx === 0 ? '-10%' : idx === 1 ? '10%' : '0%'),
+    duration: 0.95,
+    ease: 'power2.inOut'
+  });
+
+  // 2. Map Stage reveals at the peak of the fog cover (underneath)
+  tl.add(() => {
+    if (videoStage) videoStage.style.opacity = '0';
+    if (mapStage) mapStage.style.opacity = '1';
+    // Trigger marker entrance animations when the map is finally revealed
+    animateMarkersEntrance();
+  }, "-=0.3");
+
+  // 3. Fog disperses: layers fade out and scale up even larger to drift away
+  tl.to(fogLayers, {
+    opacity: 0,
+    scale: 2.3,
+    x: (idx) => (idx % 2 === 0 ? '40%' : '-40%'),
+    y: (idx) => (idx === 0 ? '-25%' : idx === 1 ? '25%' : '0%'),
+    duration: 1.35,
+    ease: 'power3.out'
+  });
+}
+
+/**
+ * Initialize KKN Identity Modal Event Listeners
+ */
+function initKKNModal() {
+  const openBtn = document.getElementById('btn-kkn-identity');
+  const closeBtn = document.getElementById('btn-close-kkn');
+  const modalOverlay = document.getElementById('kkn-modal');
+
+  if (!openBtn || !modalOverlay || !closeBtn) return;
+
+  const openModal = () => {
+    modalOverlay.setAttribute('aria-hidden', 'false');
+    modalOverlay.classList.add('active');
+    setTimeout(() => closeBtn.focus(), 100);
+  };
+
+  const closeModal = () => {
+    modalOverlay.setAttribute('aria-hidden', 'true');
+    modalOverlay.classList.remove('active');
+    openBtn.focus();
+  };
+
+  openBtn.addEventListener('click', openModal);
+  closeBtn.addEventListener('click', closeModal);
+
+  // Close when clicking on background overlay
+  modalOverlay.addEventListener('click', (e) => {
+    if (e.target === modalOverlay) {
+      closeModal();
+    }
+  });
+
+  // Close on Escape key press
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modalOverlay.classList.contains('active')) {
+      closeModal();
+    }
   });
 }
